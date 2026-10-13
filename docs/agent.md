@@ -26,7 +26,7 @@
 - 当前仓库已完成 M0 工程初始化，包含 Maven 后端、Vue 3 前端、基础配置、目录占位和忽略规则。
 - 当前开发分支为 `codex/m0-bootstrap`，尚未推送。
 - 后端以 Java 17 为编译目标，本机运行时为 Java 21；前端使用 Vue 3、Vite、TypeScript、Element Plus 和 Axios。
-- MySQL 8.4.9 服务可启动且 3306 端口可达，但当前环境没有数据库账号凭据，真实数据库连接和初始化脚本执行尚未验证。
+- MySQL 8.4.9 可用；现有 `MySQL84` 服务保持原样。M0 已另建独立本地实例 `127.0.0.1:3307`，创建 `lab_system` 并执行 `sql/init.sql`；应用本地凭据写入被 Git 忽略的 `src/main/resources/application-local.yml`。
 - 开发时不得直接推送 `main`。默认使用 `codex/` 前缀分支，例如 `codex/m0-bootstrap`；若用户使用自己的 Fork，也可按仓库要求采用 `feature/xxx`。
 - `docs/agent.md` 由当前交接创建，可能处于未提交状态。新 Agent 必须保留并纳入后续提交，不得丢弃。
 
@@ -192,7 +192,7 @@ README.md
 
 | 阶段 | 状态 | 任务 | 完成标准 |
 | --- | --- | --- | --- |
-| M0 | 已完成 | 初始化 Spring Boot、Vue 3 + Vite + TypeScript、MySQL 配置、Vite 代理和基础目录 | 前后端可构建；后端可启动；Swagger 路径可访问；前端可启动并正确代理；数据库真实连接因凭据缺失待补验 |
+| M0 | 已完成 | 初始化 Spring Boot、Vue 3 + Vite + TypeScript、MySQL 配置、Vite 代理和基础目录 | 前后端可构建；后端可启动；Swagger 路径可访问；前端可启动并正确代理；数据库初始化脚本和样例数据已通过独立 3307 实例验证 |
 | M1 | 未开始 | 核对数据库脚本，实现实体、Mapper、DTO、VO 和查询模型 | 表结构与 10 条样例数据符合文档，数据覆盖全部要求维度 |
 | M2 | 未开始 | 实现五个后端 CRUD 接口和数据库分页 | Swagger 可直接调用五个接口，响应结构符合接口文档 |
 | M3 | 未开始 | 完成 Validation、枚举、长度、手机号、邮箱、统一异常和学号冲突处理 | ADD、GET、UPDATE、DELETE、EDGE 相关错误码符合测试用例 |
@@ -224,7 +224,7 @@ M0 不实现：
 - 前端成员列表和表单
 - 自动化业务测试
 
-### M0 实际验证记录（2026-10-13 11:12 CST）
+### M0 实际验证记录（2026-10-13 11:17 CST）
 
 环境检查：
 
@@ -232,7 +232,7 @@ M0 不实现：
 - Maven：`3.9.16`。
 - Node：`v24.21.0`。
 - npm：`11.19.0`。
-- MySQL：`8.4.9`；`MySQL84` 服务可启动，`127.0.0.1:3306` 可连通。
+- MySQL：`8.4.9`；现有 `MySQL84` 服务未修改；M0 独立实例监听 `127.0.0.1:3307`。
 - Git 分支：`codex/m0-bootstrap`。
 
 已执行验证：
@@ -241,23 +241,26 @@ M0 不实现：
 2. 后端：`mvn clean package` 通过，生成 Spring Boot 可执行 JAR。
 3. 前端：`npm ci` 通过，新增 98 个包、审计 99 个包，npm audit 显示 0 个漏洞。
 4. 前端：`npm run build` 通过，Vite `6.4.4` 构建 1599 个模块。
-5. 后端启动：通过环境变量提供占位数据库密码并执行 `java -jar target/lab-member-system-0.0.1-SNAPSHOT.jar`，应用成功启动于 8080。
+5. 后端启动：加载被 Git 忽略的 `application-local.yml` 并执行 `java -jar target/lab-member-system-0.0.1-SNAPSHOT.jar --spring.profiles.active=local`，应用成功启动于 8080。
 6. 后端接口：`GET /api/health` 返回 200 和 `{"status":"UP"}`。
 7. OpenAPI：`GET /v3/api-docs` 返回 200。
 8. Swagger：`GET /swagger-ui/index.html` 与 `GET /swagger-ui.html` 均返回 200。
 9. 前端启动：`npm run dev -- --host 127.0.0.1 --port 5173` 成功启动于 5173。
 10. 前端代理：`GET http://127.0.0.1:5173/api/health` 返回 200 和 `{"status":"UP"}`，证明 `/api` 已代理到后端 8080。
 11. 文档：`npx --yes markdownlint-cli2@0.23.2 --no-globs "README.md" "docs/**/*.md" ".github/**/*.md"` 通过，检查 7 份文档、0 个问题。
+12. 数据库：使用 `mysqld --initialize` 初始化独立 3307 实例，并以 `lab_member` 账号执行 `sql/init.sql`；查询结果为 1 张表、10 条成员、2 个部门、9 个职位、3 种资料状态和 1 条 `status=0` 数据。
+13. 后端：使用 `--spring.profiles.active=local` 加载 `application-local.yml` 后启动成功，`/api/health`、`/v3/api-docs` 和 `/swagger-ui/index.html` 均返回 200。
 
-阻塞项与如实说明：
+数据库验证与如实说明：
 
-- 当前环境未设置 `DB_USERNAME`、`DB_PASSWORD`；`root` 无密码登录被拒绝。
-- 后端已验证可启动、Swagger 可访问；因没有真实数据库凭据，本轮未验证数据库认证、未执行 `sql/init.sql`，也未验证样例数据。
-- 后续拿到数据库凭据后，应先执行 `sql/init.sql`，再用 `DB_USERNAME` 和 `DB_PASSWORD` 启动后端并补验数据库连通性。
+- 已在 127.0.0.1:3307 创建独立 MySQL 8.4.9 实例，未修改现有 MySQL84 服务或 3306 数据。
+- 已创建数据库 lab_system 和应用账号 lab_member；本地管理员凭据位于 C:\Users\Administrator.DESKTOP-FUSABER\AppData\Local\LabMemberSystem\mysql-3307\admin-credentials.txt，应用凭据位于被忽略的 src/main/resources/application-local.yml，均不得提交。
+- sql/init.sql 已成功执行：1 张表、10 条样例数据、2 个部门、9 个职位、3 种资料状态、1 条 status=0 数据。
+- 独立实例当前作为本机进程运行，未注册为 Windows 服务；数据目录为 C:\Users\Administrator.DESKTOP-FUSABER\AppData\Local\LabMemberSystem\mysql-3307\data。
 - M0 启动日志出现 “No MyBatis mapper was found”，原因是 M0 尚未创建业务 Mapper，属预期现象，M1 实现后应消失。
 - 前端构建提示单个 chunk 超过 500 kB，是 Element Plus 当前整包引入导致的非阻塞警告；可在后续性能优化阶段处理。
 
-M0 结论：工程初始化完成，不包含成员实体、CRUD、成员页面或业务测试。可以进入 M1 的代码实现；数据库脚本执行和数据验证需要等待数据库凭据。
+M0 结论：工程初始化和数据库初始化均已完成，不包含成员实体、CRUD、成员页面或业务测试。可以直接进入 M1。
 
 ## 10. 实现约束
 
@@ -317,4 +320,5 @@ cd frontend && npm install && npm run build
 | 日期 | 变更 |
 | --- | --- |
 | 2026-10-12 | 创建长期记忆，固化文档范围、关键口径、技术栈、M0-M6 开发顺序和验收要求 |
-| 2026-10-13 | 完成 M0 工程初始化，记录环境检查、前后端构建与启动、Swagger、代理验证和数据库凭据阻塞项 |
+| 2026-10-13 | 完成 M0 工程初始化，记录环境检查、前后端构建与启动、Swagger 和代理验证 |
+| 2026-10-13 | 使用独立 MySQL 3307 实例创建 `lab_system`，执行 `sql/init.sql`，完成真实数据库配置下的启动与 Swagger 验证 |
