@@ -2,7 +2,7 @@
 
 > 文件用途：作为本项目后续 Agent 对话的长期执行记忆，保存已确认的技术决策、开发顺序、接口口径和验收要求。
 > 最后更新：2026-10-13
-> 当前阶段：M0 已完成，M1 待开始
+> 当前阶段：M1 已完成，M2 待开始
 > 项目根目录：`C:\Users\Administrator.DESKTOP-FUSABER\Desktop\lab-member-system-docs`
 
 ## 1. 新对话启动规则
@@ -23,11 +23,11 @@
 
 ## 2. 当前仓库状态
 
-- 当前仓库已完成 M0 工程初始化，包含 Maven 后端、Vue 3 前端、基础配置、目录占位和忽略规则。
-- 当前开发分支为 `codex/m0-bootstrap`，尚未推送。
+- 当前仓库已完成 M0 工程初始化和 M1 领域模型，包含 Maven 后端、Vue 3 前端、基础配置、实体、Mapper、DTO、VO 和查询模型。
+- 当前开发分支为 `codex/m1-domain-model`，尚未推送。
 - 后端以 Java 17 为编译目标，本机运行时为 Java 21；前端使用 Vue 3、Vite、TypeScript、Element Plus 和 Axios。
 - MySQL 8.4.9 可用；现有 `MySQL84` 服务保持原样。M0 已另建独立本地实例 `127.0.0.1:3307`，创建 `lab_system` 并执行 `sql/init.sql`；应用本地凭据写入被 Git 忽略的 `src/main/resources/application-local.yml`。
-- 开发时不得直接推送 `main`。默认使用 `codex/` 前缀分支，例如 `codex/m0-bootstrap`；若用户使用自己的 Fork，也可按仓库要求采用 `feature/xxx`。
+- 开发时不得直接推送 `main`。默认使用 `codex/` 前缀分支，例如 `codex/m1-domain-model`；若用户使用自己的 Fork，也可按仓库要求采用 `feature/xxx`。
 - `docs/agent.md` 由当前交接创建，可能处于未提交状态。新 Agent 必须保留并纳入后续提交，不得丢弃。
 
 ## 3. 项目目标与范围
@@ -193,14 +193,14 @@ README.md
 | 阶段 | 状态 | 任务 | 完成标准 |
 | --- | --- | --- | --- |
 | M0 | 已完成 | 初始化 Spring Boot、Vue 3 + Vite + TypeScript、MySQL 配置、Vite 代理和基础目录 | 前后端可构建；后端可启动；Swagger 路径可访问；前端可启动并正确代理；数据库初始化脚本和样例数据已通过独立 3307 实例验证 |
-| M1 | 未开始 | 核对数据库脚本，实现实体、Mapper、DTO、VO 和查询模型 | 表结构与 10 条样例数据符合文档，数据覆盖全部要求维度 |
+| M1 | 已完成 | 核对数据库脚本，实现实体、Mapper、DTO、VO 和查询模型 | 表结构与 10 条样例数据符合文档，数据覆盖全部要求维度 |
 | M2 | 未开始 | 实现五个后端 CRUD 接口和数据库分页 | Swagger 可直接调用五个接口，响应结构符合接口文档 |
 | M3 | 未开始 | 完成 Validation、枚举、长度、手机号、邮箱、统一异常和学号冲突处理 | ADD、GET、UPDATE、DELETE、EDGE 相关错误码符合测试用例 |
 | M4 | 未开始 | 编写 Service 和 Controller 自动化测试 | `mvn clean test` 通过，覆盖测试文档要求的成功、失败和不存在场景 |
 | M5 | 未开始 | 实现前端列表、筛选、分页、新增、编辑、删除确认和错误提示 | FE-001 至 FE-020 可在浏览器中完成验证 |
 | M6 | 未开始 | 前后端联调、全量自测、README、提交和 PR | 完成标准链路通过，测试结果完整，成果 PR 符合模板和 CI |
 
-## 9. M0 详细范围
+## 9. M0/M1 阶段记录
 
 M0 只负责工程初始化和可运行验证，不提前实现业务 CRUD。
 
@@ -262,6 +262,37 @@ M0 不实现：
 
 M0 结论：工程初始化和数据库初始化均已完成，不包含成员实体、CRUD、成员页面或业务测试。可以直接进入 M1。
 
+### M1 实际验证记录（2026-10-13 11:39 CST）
+
+数据库核对：
+
+- 连接独立实例 `127.0.0.1:3307/lab_system`，`SHOW CREATE TABLE lab_member` 返回 14 个字段，主键为 `id`，唯一索引为 `uk_student_no(student_no)`。
+- 样例数据为 10 条；年级 3 种；性别覆盖 1、2；部门覆盖 `SOFTWARE`、`ACHIEVEMENT`；职位覆盖 9 种；资料状态覆盖 `PENDING`、`COMPLETED`、`ESCALATED`；成员状态覆盖 0、1。
+- 未重复执行 `sql/init.sql`，未修改现有 `MySQL84` 服务或 3306 数据。
+
+已实现范围：
+
+- 实体：`LabMember`，使用 `@TableName("lab_member")` 和自增主键映射。
+- Mapper：`LabMemberMapper`，继承 `BaseMapper<LabMember>`。
+- DTO：`AddMemberRequest`、`UpdateMemberRequest`、`MemberQueryRequest`。
+- VO：`MemberVO`、`MemberIdVO`、`MemberPageVO`。
+- 未实现 Controller、Service、CRUD、Validation、统一异常、前端成员页面和自动化业务测试；这些分别属于 M2-M5。
+
+执行命令与结果：
+
+1. `mvn clean test`：`BUILD SUCCESS`。M1 尚未编写业务测试，因此测试数为 0，M4 补齐。
+2. `mvn clean package`：`BUILD SUCCESS`，生成 `target/lab-member-system-0.0.1-SNAPSHOT.jar`。
+3. `java -jar target/lab-member-system-0.0.1-SNAPSHOT.jar --spring.profiles.active=local`：应用成功启动于 8080，使用 `local` profile 和独立 MySQL 3307。
+4. `GET /api/health`：返回 200 和 `{"status":"UP"}`。
+5. `GET /v3/api-docs`：返回 200。
+6. `GET /swagger-ui/index.html`：返回 200。
+7. 启动日志检查：未出现 M0 阶段的 `No MyBatis mapper was found` 警告。
+8. 验证完成后已停止 8080 应用进程，3307 数据库继续运行。
+
+M1 未加入分页拦截器，数据库分页插件及实际分页查询保留在 M2 实现。
+
+M1 结论：领域模型与真实数据库结构、样例数据一致，后端可在真实数据库配置下构建、启动并生成 OpenAPI；未越界实现 CRUD、校验、异常处理、业务测试或前端页面，可以进入 M2。
+
 ## 10. 实现约束
 
 后端：
@@ -322,3 +353,4 @@ cd frontend && npm install && npm run build
 | 2026-10-12 | 创建长期记忆，固化文档范围、关键口径、技术栈、M0-M6 开发顺序和验收要求 |
 | 2026-10-13 | 完成 M0 工程初始化，记录环境检查、前后端构建与启动、Swagger 和代理验证 |
 | 2026-10-13 | 使用独立 MySQL 3307 实例创建 `lab_system`，执行 `sql/init.sql`，完成真实数据库配置下的启动与 Swagger 验证 |
+| 2026-10-13 | 完成 M1 领域模型；核对真实表结构和样例数据覆盖，完成后端测试、打包、真实数据库启动、Mapper 扫描、Swagger 验证 |
