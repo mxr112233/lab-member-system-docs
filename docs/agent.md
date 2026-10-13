@@ -2,7 +2,7 @@
 
 > 文件用途：作为本项目后续 Agent 对话的长期执行记忆，保存已确认的技术决策、开发顺序、接口口径和验收要求。
 > 最后更新：2026-10-13
-> 当前阶段：M4 已完成，M5 待开始
+> 当前阶段：M5 已完成，M6 待开始
 > 项目根目录：`C:\Users\Administrator.DESKTOP-FUSABER\Desktop\lab-member-system-docs`
 
 ## 1. 新对话启动规则
@@ -23,8 +23,8 @@
 
 ## 2. 当前仓库状态
 
-- 当前仓库已完成 M0 工程初始化、M1 领域模型、M2 后端 CRUD/数据库分页、M3 参数校验/统一异常处理和 M4 Service/Controller 自动化测试，包含 Maven 后端、Vue 3 前端、基础配置、实体、Mapper、DTO、VO、统一响应、Service、Controller、分页拦截器、字段/枚举/格式校验、统一 400/404/500 异常处理和 16 个自动化测试。
-- 当前开发分支为 `codex/m4-automated-tests`，尚未推送。
+- 当前仓库已完成 M0 工程初始化、M1 领域模型、M2 后端 CRUD/数据库分页、M3 参数校验/统一异常处理、M4 Service/Controller 自动化测试和 M5 前端成员管理，包含 Maven 后端、Vue 3 前端、基础配置、实体、Mapper、DTO、VO、统一响应、Service、Controller、分页拦截器、字段/枚举/格式校验、统一 400/404/500 异常处理、16 个自动化测试、成员列表/筛选/分页/新增/编辑/删除确认页面。
+- 当前开发分支为 `codex/m5-frontend-crud`，尚未推送。
 - 后端以 Java 17 为编译目标，本机运行时为 Java 21；前端使用 Vue 3、Vite、TypeScript、Element Plus 和 Axios。
 - MySQL 8.4.9 可用；现有 `MySQL84` 服务保持原样。M0 已另建独立本地实例 `127.0.0.1:3307`，创建 `lab_system` 并执行 `sql/init.sql`；应用本地凭据写入被 Git 忽略的 `src/main/resources/application-local.yml`。
 - 开发时不得直接推送 `main`。默认使用 `codex/` 前缀分支，例如 `codex/m1-domain-model`；若用户使用自己的 Fork，也可按仓库要求采用 `feature/xxx`。
@@ -197,8 +197,8 @@ README.md
 | M2 | 已完成 | 实现五个后端 CRUD 接口和数据库分页 | Swagger 可直接调用五个接口，响应结构符合接口文档 |
 | M3 | 已完成 | 完成 Validation、枚举、长度、手机号、邮箱、统一异常和学号冲突处理 | ADD、GET、UPDATE、DELETE、EDGE 相关错误码符合测试用例 |
 | M4 | 已完成 | 编写 Service 和 Controller 自动化测试 | `mvn clean test` 通过，覆盖测试文档要求的成功、失败和不存在场景 |
-| M5 | 待开始 | 实现前端列表、筛选、分页、新增、编辑、删除确认和错误提示 | FE-001 至 FE-020 可在浏览器中完成验证 |
-| M6 | 未开始 | 前后端联调、全量自测、README、提交和 PR | 完成标准链路通过，测试结果完整，成果 PR 符合模板和 CI |
+| M5 | 已完成 | 实现前端列表、筛选、分页、新增、编辑、删除确认和错误提示 | FE-001 至 FE-020 可在浏览器中完成验证 |
+| M6 | 待开始 | 前后端联调、全量自测、README、提交和 PR | 完成标准链路通过，测试结果完整，成果 PR 符合模板和 CI |
 
 ## 9. M0/M1 阶段记录
 
@@ -362,6 +362,40 @@ M4 实现范围：
 
 M4 结论：Service/Controller 自动化测试已落地并通过 Maven 完整测试与打包验证，没有写入或污染真实数据库；可以进入 M5 前端页面开发。
 
+### M5 实际验证记录（2026-10-13 12:59 CST）
+
+M5 实现范围：
+
+- 将应用入口切换为成员管理页面，新增成员列表、筛选表单、分页、新增/编辑复用弹窗和删除确认。
+- 新增前端 API 类型和请求封装，五个成员接口通过 Axios 调用后端 `/api`。
+- 列表完整展示姓名、学号、性别、年级、专业、手机号、邮箱、部门、职位、资料状态和成员状态。
+- 筛选支持姓名模糊、学号、年级、部门、职位、资料状态、成员状态，查询参数直接提交后端。
+- 新增/编辑表单包含必填、长度、性别/状态范围、手机号和邮箱格式前端校验；部门和职位独立枚举校验，不校验组合关系。
+- 保存、查询、删除失败时展示后端统一响应中的 `message`，包括 400、404、500。
+
+已执行验证：
+
+1. `cd frontend && npm install`：成功，审计 0 个漏洞；仅出现 esbuild 安装脚本批准提示，不影响构建。
+2. `cd frontend && npm run build`：`vue-tsc --noEmit && vite build` 通过，Vite 转换 1664 个模块；产物为 `dist/assets/index-NktnoFLM.css`、`dist/assets/index-ax9ag2zS.js`。仍有单 chunk 超过 500 kB 的非阻塞警告。
+3. 启动验证环境：后端使用 `local` profile 连接 MySQL 3307 并在 8080 启动；前端在 `127.0.0.1:5173` 启动；`GET /api/health` 返回 `{"status":"UP"}`，列表接口可返回真实样例数据。
+4. 使用 Edge + Playwright 执行页面验证，共 29 项通过、0 项失败、0 个页面脚本异常。覆盖：
+   - FE-001 列表初始展示 10 条真实数据。
+   - FE-002 新增成员成功，返回 id 后列表可查。
+   - FE-003/FE-004 姓名、学号必填前端拦截，且不发送 POST。
+   - FE-006 手机号非法前端拦截，且不发送 POST。
+   - FE-007 重复学号展示后端 `学号已存在`。
+   - FE-008、FE-009、FE-019、FE-020 姓名、年级、部门、资料状态筛选请求均由后端返回过滤结果。
+   - FE-010 分页请求实际提交 `page=2&pageSize=5`，响应 `total=10`、`records=5`，未使用前端内存分页。
+   - FE-011/FE-012 编辑弹窗回显和保存成功，保存后数据库读取结果已更新。
+   - FE-013/FE-014 删除取消保留记录，确认删除后列表和按学号查询均无结果。
+   - FE-018 `ACHIEVEMENT + PRODUCT` 保存和列表展示均成功。
+5. UI 验证测试数据已清理，清理后 `lab_member` 仍为 10 条样例数据。
+6. 验证结束后已停止 8080 和 5173 进程，保留 127.0.0.1:3307 MySQL 实例；未修改 3306/MySQL84 服务。
+7. `npx --yes markdownlint-cli2@0.23.2 --no-globs "README.md" "docs/**/*.md" ".github/**/*.md"`：通过，检查 7 份文档、0 个问题。
+8. `git check-ignore -v -- src/main/resources/application-local.yml`：确认本地数据库配置仍被忽略，未加入 Git。
+
+M5 结论：前端成员列表、组合筛选、数据库分页、前端校验、后端错误 message 展示和完整 CRUD 页面链路均已通过真实 3307 数据验证，可以进入 M6 前后端联调和最终验收。
+
 ## 10. 实现约束
 
 后端：
@@ -426,3 +460,4 @@ cd frontend && npm install && npm run build
 | 2026-10-13 | 完成 M2 后端 CRUD 和数据库分页；升级 MyBatis-Plus 至 3.5.17，完成真实 3307 CRUD 链路、SQL 分页日志、Swagger/OpenAPI 和文档校验 |
 | 2026-10-13 | 完成 M3 参数校验和统一异常处理；新增字段/枚举/格式/长度校验、统一 400/404/500 响应、学号重复预检查，并完成真实 3307 错误链路验证 |
 | 2026-10-13 | 完成 M4 Service/Controller 自动化测试；新增 16 个测试并完成 mvn clean test、mvn clean package 和敏感配置忽略检查 |
+| 2026-10-13 | 完成 M5 前端成员管理；实现列表、筛选、分页、新增/编辑复用表单、删除确认和错误提示，并通过 Edge 页面自动化、构建和文档校验 |

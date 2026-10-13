@@ -14,20 +14,12 @@ body {
   min-width: 320px;
   min-height: 100vh;
   margin: 0;
+  background: #f3f6fa;
 }
 
-.bootstrap-shell {
-  display: grid;
-  min-height: 100vh;
-  place-items: center;
-  padding: 24px;
-}
-
-.bootstrap-card {
-  width: min(680px, 100%);
-}
-
-.bootstrap-card h1 {
-  margin: 0;
-  font-size: 24px;
+button,
+input,
+textarea,
+select {
+  font: inherit;
 }
