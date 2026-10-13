@@ -2,7 +2,7 @@
 
 > 文件用途：作为本项目后续 Agent 对话的长期执行记忆，保存已确认的技术决策、开发顺序、接口口径和验收要求。
 > 最后更新：2026-10-13
-> 当前阶段：M3 已完成，M4 待开始
+> 当前阶段：M4 已完成，M5 待开始
 > 项目根目录：`C:\Users\Administrator.DESKTOP-FUSABER\Desktop\lab-member-system-docs`
 
 ## 1. 新对话启动规则
@@ -23,8 +23,8 @@
 
 ## 2. 当前仓库状态
 
-- 当前仓库已完成 M0 工程初始化、M1 领域模型、M2 后端 CRUD/数据库分页和 M3 参数校验/统一异常处理，包含 Maven 后端、Vue 3 前端、基础配置、实体、Mapper、DTO、VO、统一响应、Service、Controller、分页拦截器、字段/枚举/格式校验和统一 400/404/500 异常处理。
-- 当前开发分支为 `codex/m3-validation-exception`，尚未推送。
+- 当前仓库已完成 M0 工程初始化、M1 领域模型、M2 后端 CRUD/数据库分页、M3 参数校验/统一异常处理和 M4 Service/Controller 自动化测试，包含 Maven 后端、Vue 3 前端、基础配置、实体、Mapper、DTO、VO、统一响应、Service、Controller、分页拦截器、字段/枚举/格式校验、统一 400/404/500 异常处理和 16 个自动化测试。
+- 当前开发分支为 `codex/m4-automated-tests`，尚未推送。
 - 后端以 Java 17 为编译目标，本机运行时为 Java 21；前端使用 Vue 3、Vite、TypeScript、Element Plus 和 Axios。
 - MySQL 8.4.9 可用；现有 `MySQL84` 服务保持原样。M0 已另建独立本地实例 `127.0.0.1:3307`，创建 `lab_system` 并执行 `sql/init.sql`；应用本地凭据写入被 Git 忽略的 `src/main/resources/application-local.yml`。
 - 开发时不得直接推送 `main`。默认使用 `codex/` 前缀分支，例如 `codex/m1-domain-model`；若用户使用自己的 Fork，也可按仓库要求采用 `feature/xxx`。
@@ -196,8 +196,8 @@ README.md
 | M1 | 已完成 | 核对数据库脚本，实现实体、Mapper、DTO、VO 和查询模型 | 表结构与 10 条样例数据符合文档，数据覆盖全部要求维度 |
 | M2 | 已完成 | 实现五个后端 CRUD 接口和数据库分页 | Swagger 可直接调用五个接口，响应结构符合接口文档 |
 | M3 | 已完成 | 完成 Validation、枚举、长度、手机号、邮箱、统一异常和学号冲突处理 | ADD、GET、UPDATE、DELETE、EDGE 相关错误码符合测试用例 |
-| M4 | 待开始 | 编写 Service 和 Controller 自动化测试 | `mvn clean test` 通过，覆盖测试文档要求的成功、失败和不存在场景 |
-| M5 | 未开始 | 实现前端列表、筛选、分页、新增、编辑、删除确认和错误提示 | FE-001 至 FE-020 可在浏览器中完成验证 |
+| M4 | 已完成 | 编写 Service 和 Controller 自动化测试 | `mvn clean test` 通过，覆盖测试文档要求的成功、失败和不存在场景 |
+| M5 | 待开始 | 实现前端列表、筛选、分页、新增、编辑、删除确认和错误提示 | FE-001 至 FE-020 可在浏览器中完成验证 |
 | M6 | 未开始 | 前后端联调、全量自测、README、提交和 PR | 完成标准链路通过，测试结果完整，成果 PR 符合模板和 CI |
 
 ## 9. M0/M1 阶段记录
@@ -344,6 +344,24 @@ M3 实现范围：
 
 M3 结论：参数校验、枚举校验、学号冲突处理、统一异常响应和修改时间刷新已在真实 MySQL 3307 环境验证，满足进入 M4 的条件。M4 需补齐 Service/Controller 自动化测试，包括成功、失败和不存在场景。
 
+### M4 实际验证记录（2026-10-13 12:32 CST）
+
+M4 实现范围：
+
+- 新增 `src/test/java/com/nynu/codelab/labmember/member/service/MemberServiceTest.java`，覆盖 Service 层正常新增、重复学号、查询不存在、修改不存在、删除不存在、数据库分页调用和修改时间刷新等场景。
+- 新增 `src/test/java/com/nynu/codelab/labmember/member/controller/MemberControllerTest.java`，使用 MockMvc 覆盖新增成功、参数校验失败、查询成功、查询不存在、分页查询、修改成功和删除成功等 HTTP 契约。
+- 测试全部使用 Mockito/MockMvc，不依赖真实数据库写入，避免污染 3307 数据库中的样例数据。
+
+已执行验证：
+
+1. `mvn clean test`：`BUILD SUCCESS`，Controller 测试 8 个、Service 测试 8 个，共 16 个测试，Failures 0、Errors 0、Skipped 0。
+2. `mvn clean package`：`BUILD SUCCESS`，16 个测试全部通过并生成 `target/lab-member-system-0.0.1-SNAPSHOT.jar`。
+3. `git check-ignore -v -- src/main/resources/application-local.yml`：确认本地数据库配置仍被 `.gitignore` 忽略，未进入 Git 变更。
+4. 3307 端口仍监听 `127.0.0.1:3307`，8080 端口无监听进程；未修改 3306 或现有 MySQL84 服务。
+5. 自动化测试覆盖测试文档要求：Service 正常新增、重复学号、查询不存在、修改不存在、删除不存在；Controller 新增成功、参数错误、查询成功、查询不存在、修改成功、删除成功。同时额外覆盖分页调用和修改时间刷新。
+
+M4 结论：Service/Controller 自动化测试已落地并通过 Maven 完整测试与打包验证，没有写入或污染真实数据库；可以进入 M5 前端页面开发。
+
 ## 10. 实现约束
 
 后端：
@@ -407,3 +425,4 @@ cd frontend && npm install && npm run build
 | 2026-10-13 | 完成 M1 领域模型；核对真实表结构和样例数据覆盖，完成后端测试、打包、真实数据库启动、Mapper 扫描、Swagger 验证 |
 | 2026-10-13 | 完成 M2 后端 CRUD 和数据库分页；升级 MyBatis-Plus 至 3.5.17，完成真实 3307 CRUD 链路、SQL 分页日志、Swagger/OpenAPI 和文档校验 |
 | 2026-10-13 | 完成 M3 参数校验和统一异常处理；新增字段/枚举/格式/长度校验、统一 400/404/500 响应、学号重复预检查，并完成真实 3307 错误链路验证 |
+| 2026-10-13 | 完成 M4 Service/Controller 自动化测试；新增 16 个测试并完成 mvn clean test、mvn clean package 和敏感配置忽略检查 |
