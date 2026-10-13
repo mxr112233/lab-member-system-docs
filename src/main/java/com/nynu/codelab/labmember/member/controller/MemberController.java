@@ -10,6 +10,7 @@ import com.nynu.codelab.labmember.member.vo.MemberPageVO;
 import com.nynu.codelab.labmember.member.vo.MemberVO;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -31,7 +32,7 @@ public class MemberController {
 
     @PostMapping
     @Operation(summary = "新增成员")
-    public ApiResponse<MemberIdVO> add(@RequestBody AddMemberRequest request) {
+    public ApiResponse<MemberIdVO> add(@Valid @RequestBody AddMemberRequest request) {
         return ApiResponse.success(memberService.add(request));
     }
 
@@ -43,13 +44,13 @@ public class MemberController {
 
     @GetMapping
     @Operation(summary = "分页条件查询成员")
-    public ApiResponse<MemberPageVO> page(@ParameterObject MemberQueryRequest request) {
+    public ApiResponse<MemberPageVO> page(@Valid @ParameterObject MemberQueryRequest request) {
         return ApiResponse.success(memberService.page(request));
     }
 
     @PutMapping("/{id}")
     @Operation(summary = "修改成员")
-    public ApiResponse<MemberVO> update(@PathVariable Long id, @RequestBody UpdateMemberRequest request) {
+    public ApiResponse<MemberVO> update(@PathVariable Long id, @Valid @RequestBody UpdateMemberRequest request) {
         return ApiResponse.success(memberService.update(id, request));
     }
 

@@ -7,6 +7,7 @@ import com.nynu.codelab.labmember.member.dto.AddMemberRequest;
 import com.nynu.codelab.labmember.member.dto.MemberQueryRequest;
 import com.nynu.codelab.labmember.member.dto.UpdateMemberRequest;
 import com.nynu.codelab.labmember.member.entity.LabMember;
+import com.nynu.codelab.labmember.member.exception.DuplicateStudentNoException;
 import com.nynu.codelab.labmember.member.exception.MemberNotFoundException;
 import com.nynu.codelab.labmember.member.mapper.LabMemberMapper;
 import com.nynu.codelab.labmember.member.vo.MemberIdVO;
@@ -30,6 +31,8 @@ public class MemberService {
     private final LabMemberMapper labMemberMapper;
 
     public MemberIdVO add(AddMemberRequest request) {
+        normalizeOptionalFields(request);
+        ensureStudentNoUnique(request.getStudentNo(), null);
         LabMember member = new LabMember();
         BeanUtils.copyProperties(request, member);
         labMemberMapper.insert(member);
@@ -64,6 +67,8 @@ public class MemberService {
 
     public MemberVO update(Long id, UpdateMemberRequest request) {
         LabMember member = getEntity(id);
+        normalizeOptionalFields(request);
+        ensureStudentNoUnique(request.getStudentNo(), id);
         BeanUtils.copyProperties(request, member, "id", "createTime", "updateTime");
         member.setUpdateTime(LocalDateTime.now());
         labMemberMapper.updateById(member);
@@ -75,12 +80,35 @@ public class MemberService {
         labMemberMapper.deleteById(id);
     }
 
+    private void ensureStudentNoUnique(String studentNo, Long excludedId) {
+        LambdaQueryWrapper<LabMember> wrapper = Wrappers.lambdaQuery();
+        wrapper.eq(LabMember::getStudentNo, studentNo)
+                .ne(excludedId != null, LabMember::getId, excludedId);
+        if (labMemberMapper.selectCount(wrapper) > 0) {
+            throw new DuplicateStudentNoException();
+        }
+    }
+
     private LabMember getEntity(Long id) {
         LabMember member = labMemberMapper.selectById(id);
         if (member == null) {
             throw new MemberNotFoundException(id);
         }
         return member;
+    }
+
+    private void normalizeOptionalFields(AddMemberRequest request) {
+        request.setPhone(normalizeOptional(request.getPhone()));
+        request.setEmail(normalizeOptional(request.getEmail()));
+    }
+
+    private void normalizeOptionalFields(UpdateMemberRequest request) {
+        request.setPhone(normalizeOptional(request.getPhone()));
+        request.setEmail(normalizeOptional(request.getEmail()));
+    }
+
+    private String normalizeOptional(String value) {
+        return StringUtils.hasText(value) ? value.trim() : null;
     }
 
     private MemberVO toVO(LabMember member) {

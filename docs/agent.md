@@ -2,7 +2,7 @@
 
 > 文件用途：作为本项目后续 Agent 对话的长期执行记忆，保存已确认的技术决策、开发顺序、接口口径和验收要求。
 > 最后更新：2026-10-13
-> 当前阶段：M2 已完成，M3 待开始
+> 当前阶段：M3 已完成，M4 待开始
 > 项目根目录：`C:\Users\Administrator.DESKTOP-FUSABER\Desktop\lab-member-system-docs`
 
 ## 1. 新对话启动规则
@@ -23,8 +23,8 @@
 
 ## 2. 当前仓库状态
 
-- 当前仓库已完成 M0 工程初始化、M1 领域模型和 M2 后端 CRUD/数据库分页，包含 Maven 后端、Vue 3 前端、基础配置、实体、Mapper、DTO、VO、统一成功响应、Service、Controller、基础 404/重复学号响应和分页拦截器。
-- 当前开发分支为 `codex/m2-crud-api`，尚未推送。
+- 当前仓库已完成 M0 工程初始化、M1 领域模型、M2 后端 CRUD/数据库分页和 M3 参数校验/统一异常处理，包含 Maven 后端、Vue 3 前端、基础配置、实体、Mapper、DTO、VO、统一响应、Service、Controller、分页拦截器、字段/枚举/格式校验和统一 400/404/500 异常处理。
+- 当前开发分支为 `codex/m3-validation-exception`，尚未推送。
 - 后端以 Java 17 为编译目标，本机运行时为 Java 21；前端使用 Vue 3、Vite、TypeScript、Element Plus 和 Axios。
 - MySQL 8.4.9 可用；现有 `MySQL84` 服务保持原样。M0 已另建独立本地实例 `127.0.0.1:3307`，创建 `lab_system` 并执行 `sql/init.sql`；应用本地凭据写入被 Git 忽略的 `src/main/resources/application-local.yml`。
 - 开发时不得直接推送 `main`。默认使用 `codex/` 前缀分支，例如 `codex/m1-domain-model`；若用户使用自己的 Fork，也可按仓库要求采用 `feature/xxx`。
@@ -195,8 +195,8 @@ README.md
 | M0 | 已完成 | 初始化 Spring Boot、Vue 3 + Vite + TypeScript、MySQL 配置、Vite 代理和基础目录 | 前后端可构建；后端可启动；Swagger 路径可访问；前端可启动并正确代理；数据库初始化脚本和样例数据已通过独立 3307 实例验证 |
 | M1 | 已完成 | 核对数据库脚本，实现实体、Mapper、DTO、VO 和查询模型 | 表结构与 10 条样例数据符合文档，数据覆盖全部要求维度 |
 | M2 | 已完成 | 实现五个后端 CRUD 接口和数据库分页 | Swagger 可直接调用五个接口，响应结构符合接口文档 |
-| M3 | 待开始 | 完成 Validation、枚举、长度、手机号、邮箱、统一异常和学号冲突处理 | ADD、GET、UPDATE、DELETE、EDGE 相关错误码符合测试用例 |
-| M4 | 未开始 | 编写 Service 和 Controller 自动化测试 | `mvn clean test` 通过，覆盖测试文档要求的成功、失败和不存在场景 |
+| M3 | 已完成 | 完成 Validation、枚举、长度、手机号、邮箱、统一异常和学号冲突处理 | ADD、GET、UPDATE、DELETE、EDGE 相关错误码符合测试用例 |
+| M4 | 待开始 | 编写 Service 和 Controller 自动化测试 | `mvn clean test` 通过，覆盖测试文档要求的成功、失败和不存在场景 |
 | M5 | 未开始 | 实现前端列表、筛选、分页、新增、编辑、删除确认和错误提示 | FE-001 至 FE-020 可在浏览器中完成验证 |
 | M6 | 未开始 | 前后端联调、全量自测、README、提交和 PR | 完成标准链路通过，测试结果完整，成果 PR 符合模板和 CI |
 
@@ -317,6 +317,33 @@ M2 实现范围：
 
 M2 结论：五个 CRUD 接口、统一成功响应、数据库分页和基础不存在响应均已在真实 MySQL 3307 环境验证，满足进入 M3 的条件。M3 需要补齐 Validation、枚举/长度/格式校验、统一异常处理及学号冲突完整处理。
 
+### M3 实际验证记录（2026-10-13 12:09 CST）
+
+M3 实现范围：
+
+- 新增字段校验：必填、数据库长度上限、`gender`/`status` 范围、手机号和邮箱格式。
+- 新增枚举校验：`department`、`position`、`profileStatus`，部门和职位仍不校验组合关系，`ACHIEVEMENT + PRODUCT` 可正常保存。
+- 新增分页边界校验：`page >= 1`、`pageSize >= 1` 且不超过 100。
+- 新增业务层学号唯一预检查和数据库唯一索引兜底，重复学号统一返回 400 和 `学号已存在`。
+- 新增统一异常处理：400 `参数错误`、404 `成员不存在`、500 `系统异常`，统一返回 `{code,message,data}`。
+- 修改成员仍显式刷新 `updateTime`，同值修改也会更新时间。
+- 完整 Service/Controller 自动化测试仍留待 M4。
+
+已执行验证：
+
+1. `mvn clean test`：`BUILD SUCCESS`。M3 未新增 M4 业务自动化测试，因此测试数仍为 0。
+2. `mvn clean package`：`BUILD SUCCESS`。
+3. `java -jar target/lab-member-system-0.0.1-SNAPSHOT.jar --spring.profiles.active=local`：应用成功启动并连接 3307。
+4. `GET /api/health`：200；`GET /v3/api-docs`：200；`GET /swagger-ui/index.html`：200。
+5. OpenAPI 必填字段包含 `department,gender,grade,major,name,position,profileStatus,status,studentNo`；列表 query 参数完整。
+6. 新增失败场景：`name` 空/null、`studentNo` 空、重复学号、`gender=5`、`grade` 空、`major` 空、`status=5`、手机号非法、邮箱非法、部门/职位/资料状态非法、超长姓名、超长学号均返回 400；其中重复学号为 `学号已存在`，其余为 `参数错误`。
+7. 分页和绑定边界：`page=0`、`pageSize=0`、负页码/每页数、`pageSize=101`、非法查询枚举、`/api/members/abc`、损坏 JSON 均返回统一 400。
+8. 成功链路：新增 `ACHIEVEMENT + PRODUCT` 成员，空字符串手机号和邮箱保存为 `null`；修改重复学号返回 400，非法修改返回 400，修改不存在和删除不存在返回 404；正常修改后查询字段已更新，`updateTime` 从 `12:08:31` 刷新到 `12:08:42`；删除成功，删除后查询返回 404。
+9. 同值修改：旧 `updateTime=12:08:58`，提交完全相同内容后新 `updateTime=12:08:59`，确认仍刷新。
+10. 验证结束后停止 8080 应用，保留 3307 MySQL 实例。
+
+M3 结论：参数校验、枚举校验、学号冲突处理、统一异常响应和修改时间刷新已在真实 MySQL 3307 环境验证，满足进入 M4 的条件。M4 需补齐 Service/Controller 自动化测试，包括成功、失败和不存在场景。
+
 ## 10. 实现约束
 
 后端：
@@ -379,3 +406,4 @@ cd frontend && npm install && npm run build
 | 2026-10-13 | 使用独立 MySQL 3307 实例创建 `lab_system`，执行 `sql/init.sql`，完成真实数据库配置下的启动与 Swagger 验证 |
 | 2026-10-13 | 完成 M1 领域模型；核对真实表结构和样例数据覆盖，完成后端测试、打包、真实数据库启动、Mapper 扫描、Swagger 验证 |
 | 2026-10-13 | 完成 M2 后端 CRUD 和数据库分页；升级 MyBatis-Plus 至 3.5.17，完成真实 3307 CRUD 链路、SQL 分页日志、Swagger/OpenAPI 和文档校验 |
+| 2026-10-13 | 完成 M3 参数校验和统一异常处理；新增字段/枚举/格式/长度校验、统一 400/404/500 响应、学号重复预检查，并完成真实 3307 错误链路验证 |
