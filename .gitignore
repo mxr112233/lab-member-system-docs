@@ -1,6 +1,14 @@
 # Maven
 target/
-!.mvn/wrapper/maven-wrapper.jar
+
+# Java build
+*.class
+*.jar
+!/.mvn/wrapper/maven-wrapper.jar
+*.war
+*.ear
+*.tsbuildinfo
+coverage/
 
 # IDE
 .idea/
@@ -18,10 +26,24 @@ Thumbs.db
 *.log
 logs/
 
-# Local config
+# Local and secret config
+.env
+.env.*
+!.env.example
 application-local.yml
 application-local.yaml
+application-*.local.yml
+application-*.local.yaml
+
+# Frontend
+node_modules/
+dist/
+frontend/.vite/
+frontend/coverage/
+frontend/node_modules/
+frontend/dist/
 
 # Temporary
 tmp/
 temp/
+*.pid
