@@ -199,6 +199,32 @@ pom.xml
 
 ## 11. 自测与验收
 
+### 本地启动步骤
+
+前置：Java 17+、Maven 3.9+、Node 18+、MySQL 8.x。先用 `sql/init.sql` 建库建表并写入样例数据——该脚本含 `INSERT`，只能在库未初始化时执行一次，切勿重复执行，否则会触发 `student_no` 唯一键冲突。数据库连接等敏感配置放在未跟踪的 `src/main/resources/application-local.yml`，通过 `local` profile 加载，不要提交或泄露密码。
+
+```bash
+# 1) 后端：测试、打包
+mvn clean test
+mvn clean package
+
+# 2) 后端：以 local profile 启动，默认监听 8080
+java -jar target/lab-member-system-0.0.1-SNAPSHOT.jar --spring.profiles.active=local
+```
+
+```bash
+# 3) 前端：安装依赖并启动开发服务器，默认监听 5173
+cd frontend
+npm install
+npm run dev -- --host 127.0.0.1 --port 5173
+```
+
+启动后可访问：
+
+- 健康检查：`GET http://localhost:8080/api/health` → `{"status":"UP"}`
+- 接口文档：`http://localhost:8080/swagger-ui/index.html`（OpenAPI JSON：`http://localhost:8080/v3/api-docs`）
+- 前端页面：`http://127.0.0.1:5173/`，页面通过 Vite 代理把 `/api` 转发到 `http://localhost:8080`
+
 提交前请自己先跑一遍，把输出粘进 PR 描述：
 
 ```bash

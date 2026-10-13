@@ -2,7 +2,7 @@
 
 > 文件用途：作为本项目后续 Agent 对话的长期执行记忆，保存已确认的技术决策、开发顺序、接口口径和验收要求。
 > 最后更新：2026-10-13
-> 当前阶段：M5 已完成，M6 待开始
+> 当前阶段：M6 已完成
 > 项目根目录：`C:\Users\Administrator.DESKTOP-FUSABER\Desktop\lab-member-system-docs`
 
 ## 1. 新对话启动规则
@@ -23,8 +23,8 @@
 
 ## 2. 当前仓库状态
 
-- 当前仓库已完成 M0 工程初始化、M1 领域模型、M2 后端 CRUD/数据库分页、M3 参数校验/统一异常处理、M4 Service/Controller 自动化测试和 M5 前端成员管理，包含 Maven 后端、Vue 3 前端、基础配置、实体、Mapper、DTO、VO、统一响应、Service、Controller、分页拦截器、字段/枚举/格式校验、统一 400/404/500 异常处理、16 个自动化测试、成员列表/筛选/分页/新增/编辑/删除确认页面。
-- 当前开发分支为 `codex/m5-frontend-crud`，尚未推送。
+- 当前仓库已完成 M0 工程初始化、M1 领域模型、M2 后端 CRUD/数据库分页、M3 参数校验/统一异常处理、M4 Service/Controller 自动化测试、M5 前端成员管理和 M6 前后端联调/全量自测，包含 Maven 后端、Vue 3 前端、基础配置、实体、Mapper、DTO、VO、统一响应、Service、Controller、分页拦截器、字段/枚举/格式校验、统一 400/404/500 异常处理、16 个自动化测试、成员列表/筛选/分页/新增/编辑/删除确认页面，以及真实 3307 环境下的前后端联调验收。
+- 当前开发分支为 `codex/m6-integration`，尚未推送。
 - 后端以 Java 17 为编译目标，本机运行时为 Java 21；前端使用 Vue 3、Vite、TypeScript、Element Plus 和 Axios。
 - MySQL 8.4.9 可用；现有 `MySQL84` 服务保持原样。M0 已另建独立本地实例 `127.0.0.1:3307`，创建 `lab_system` 并执行 `sql/init.sql`；应用本地凭据写入被 Git 忽略的 `src/main/resources/application-local.yml`。
 - 开发时不得直接推送 `main`。默认使用 `codex/` 前缀分支，例如 `codex/m1-domain-model`；若用户使用自己的 Fork，也可按仓库要求采用 `feature/xxx`。
@@ -198,7 +198,7 @@ README.md
 | M3 | 已完成 | 完成 Validation、枚举、长度、手机号、邮箱、统一异常和学号冲突处理 | ADD、GET、UPDATE、DELETE、EDGE 相关错误码符合测试用例 |
 | M4 | 已完成 | 编写 Service 和 Controller 自动化测试 | `mvn clean test` 通过，覆盖测试文档要求的成功、失败和不存在场景 |
 | M5 | 已完成 | 实现前端列表、筛选、分页、新增、编辑、删除确认和错误提示 | FE-001 至 FE-020 可在浏览器中完成验证 |
-| M6 | 待开始 | 前后端联调、全量自测、README、提交和 PR | 完成标准链路通过，测试结果完整，成果 PR 符合模板和 CI |
+| M6 | 已完成 | 前后端联调、全量自测、README、提交和 PR | 完成标准链路通过，测试结果完整，提交符合规范 |
 
 ## 9. M0/M1 阶段记录
 
@@ -396,6 +396,32 @@ M5 实现范围：
 
 M5 结论：前端成员列表、组合筛选、数据库分页、前端校验、后端错误 message 展示和完整 CRUD 页面链路均已通过真实 3307 数据验证，可以进入 M6 前后端联调和最终验收。
 
+### M6 实际验证记录（2026-10-13 13:17 CST）
+
+M6 实现范围：
+
+- 分支 `codex/m6-integration`，基于 M5 提交 `1d3a028`，只做前后端联调、全量自测、README 与长期记忆更新，未做大规模重构。
+- 汇总一次完整回归：后端单元测试与打包、前端依赖安装与构建、本地 `local` profile 真实连接 3307、Swagger/OpenAPI、真实页面 CRUD 链路、条件分页筛选和边界错误。
+
+已执行验证：
+
+1. 环境与敏感文件：`git status --short --branch --untracked-files=all` 确认工作区干净后切到 `codex/m6-integration`；`application-local.yml` 存在且被 `.gitignore` 忽略；3307 端口保留监听（PID 16120），3306/MySQL84 未改动。
+2. 数据库只读核对：未重复执行 `sql/init.sql`；只读确认 1 张表 `lab_member`、14 个字段、`uk_student_no` 唯一索引、10 条样例数据。
+3. 后端测试：`mvn clean test`：`BUILD SUCCESS`，Controller 8 个 + Service 8 个共 16 个测试，Failures 0、Errors 0、Skipped 0。
+4. 后端打包：`mvn clean package`：`BUILD SUCCESS`，生成 `target/lab-member-system-0.0.1-SNAPSHOT.jar`。
+5. 前端依赖与构建：`cd frontend && npm install` 成功（0 漏洞）；`cd frontend && npm run build` 成功，Vite 转换 1664 个模块。
+6. 启动联调环境：后端以 `java -jar target/lab-member-system-0.0.1-SNAPSHOT.jar --spring.profiles.active=local` 连接 3307 启动于 8080；前端以 `npm run dev -- --host 127.0.0.1 --port 5173` 启动于 5173。
+7. 基础接口：`GET /api/health` 返回 `200 {"status":"UP"}`；`GET /v3/api-docs` 返回 OpenAPI 3.0.1，五个成员路径/方法齐全；`GET /swagger-ui/index.html` 返回 200；`GET http://127.0.0.1:5173/` 返回含 `id="app"` 的页面；`GET http://127.0.0.1:5173/api/health` 返回 200，确认 Vite `/api` 代理到 8080 正常。
+8. Swagger 页面：成员管理 5 个接口全部可见（GET×2、POST、PUT、DELETE），成员列表接口在 Swagger 中 `Try it out` + `Execute` 返回 200。
+9. 真实 API CRUD 链路：新增返回 id；详情可查；`ACHIEVEMENT + PRODUCT` 组合允许保存；重复学号返回 400 `学号已存在`；修改后查询确认字段更新，`updateTime` 从 `13:12:40` 刷新到 `13:12:43`；删除返回 `删除成功`，再次查询返回 404 `成员不存在`。
+10. 分页与筛选：`page=2&pageSize=5` 返回 `total=10`、`records=5`；`page=0&pageSize=101` 返回 400 `参数错误`；姓名模糊、学号、年级、部门、职位、资料状态、成员状态七类筛选均返回正确结果。
+11. 真实页面联调（Edge + Playwright）：页面加载、新增、详情/编辑回显、修改、删除、七类筛选、分页以及后端 400/404/500 `message` 展示均通过；页面分页确认实际请求 `page=2&pageSize=5`，与后端返回一致。
+12. 文档检查：`npx --yes markdownlint-cli2@0.23.2 --no-globs "README.md" "docs/**/*.md" ".github/**/*.md"`：通过，检查 7 份文档、0 个问题。
+13. 敏感文件：`git check-ignore -v -- src/main/resources/application-local.yml target frontend/dist frontend/node_modules` 确认本地配置与构建产物均被忽略；`git ls-files` 确认未跟踪 `application-local.yml`、`target`、`dist`、`node_modules`。
+14. 验证结束后停止 8080 应用与 5173 前端进程，保留 127.0.0.1:3307 MySQL 实例；未修改 3306/MySQL84 服务。
+
+M6 结论：前后端成功链路、条件分页筛选、边界错误、Swagger 与 Vite 代理均已在真实 3307 环境完成联调与回归，README 与长期记忆同步更新，本地提交范围清晰，满足最终交付条件。
+
 ## 10. 实现约束
 
 后端：
@@ -461,3 +487,4 @@ cd frontend && npm install && npm run build
 | 2026-10-13 | 完成 M3 参数校验和统一异常处理；新增字段/枚举/格式/长度校验、统一 400/404/500 响应、学号重复预检查，并完成真实 3307 错误链路验证 |
 | 2026-10-13 | 完成 M4 Service/Controller 自动化测试；新增 16 个测试并完成 mvn clean test、mvn clean package 和敏感配置忽略检查 |
 | 2026-10-13 | 完成 M5 前端成员管理；实现列表、筛选、分页、新增/编辑复用表单、删除确认和错误提示，并通过 Edge 页面自动化、构建和文档校验 |
+| 2026-10-13 | 完成 M6 前后端联调与全量自测；完成 mvn test/package、前端构建、Swagger/API、真实页面 CRUD、分页筛选与边界验证，更新 README 与长期记忆并本地提交 |
